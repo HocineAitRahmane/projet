@@ -3,23 +3,19 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-
-// Taille maximal des matrices
+// taille maximal des matrices
 #define MAX_SIZE 10 
-// Nombre maximal de threads
+// nombre maximal de threads
 #define MAX_THREADS 10 
 
-
 int B[MAX_SIZE][MAX_SIZE], C[MAX_SIZE][MAX_SIZE], A[MAX_SIZE][MAX_SIZE];
-// Dimensions des matrices B et C
+// dimensions des matrices B et C
 int n1, m1, n2, m2; 
 
-
-// Tampon pour les resultats intermediaires
+// tampon pour les resultats 
 int *T; 
-// Index de tampon
+// index de tampon
 int bufferIndex = 0; 
-
 
 pthread_mutex_t mutex;
 sem_t empty;
@@ -34,7 +30,7 @@ void fillMatrix(int matrix[MAX_SIZE][MAX_SIZE], int rows, int cols) {
     }
 }
 
-// fonction pour calculer le produit de deux ligne de matrices
+// fonction pour calculer le produit de deux lignes de matrices
 int calculateRowProduct(int rowB[MAX_SIZE], int colC[MAX_SIZE]) {
     int result = 0;
     for (int i = 0; i < MAX_SIZE; i++) {
@@ -69,7 +65,7 @@ void *consumer(void *arg) {
         bufferIndex = (bufferIndex + 1) % (n1 * m2);
         pthread_mutex_unlock(&mutex);
         sem_post(&empty);
-        // plasse le resultat dans la matrice A
+        // placer le resultat dans la matrice A
         int row = elementsConsumed / m2;
         int col = elementsConsumed % m2;
         A[row][col] = result;
@@ -79,21 +75,38 @@ void *consumer(void *arg) {
 }
 
 int main() {
+    printf("Entrez le nombre de lignes de la matrice A : ");
+    scanf("%d", &n1);
+    printf("Entrez le nombre de colonnes de la matrice A : ");
+    scanf("%d", &m1);
+    printf("Entrez le nombre de lignes de la matrice B : ");
+    scanf("%d", &n2);
+    printf("Entrez le nombre de colonnes de la matrice B : ");
+    scanf("%d", &m2);
 
-    // inisialisation des valeurs et des matrices
-    n1 = 3; m1 = 3; n2 = 3; m2 = 3; 
+    printf("\n");
+
+    // verification des dimensions pour la multiplication de matrices
+    if (m1 != n2) {
+        printf("Erreur : Les dimensions des matrices ne permettent pas la multiplication.\n");
+        return -1;
+    }
+
+    // informations utilisateur
+    printf("Les deux matrices sont remplies avec des valeurs aleatoires.\n");
+    printf("La matrice A est le résultat de la multiplication de ces deux matrices.\n");
+
+    // allocation de l'espace pour le tampon
+    T = (int *)malloc(n1 * m2 * sizeof(int));
+
+    // remplissage des matrices B et C avec des valeurs aléatoires
     fillMatrix(B, n1, m1);
     fillMatrix(C, n2, m2);
-
-     
-	// alloer de l'espace pour le tampon
-	T = (int *)malloc(n1 * m2 * sizeof(int));
-
 
     pthread_t producerThreads[MAX_THREADS], consumerThread;
     int producerArgs[MAX_THREADS];
 
-    // inisialisation des semaphores et du mutex
+    // initialisation des semaphores et du mutex
     sem_init(&empty, 0, n1 * m2); 
     sem_init(&full, 0, 0);
     pthread_mutex_init(&mutex, NULL);
@@ -115,8 +128,7 @@ int main() {
     // attente du thread consommateur
     pthread_join(consumerThread, NULL);
 
-
-    // affichage de la matrice resultante A
+    // affichage de la matrice résultante A
     printf("Matrice A:\n");
     for (int i = 0; i < n1; i++) {
         for (int j = 0; j < m2; j++) {
@@ -125,13 +137,12 @@ int main() {
         printf("\n");
     }
 
-
-    // destruction des semaphores et les mutex
+    // destruction des semaphores et du mutex
     sem_destroy(&empty);
     sem_destroy(&full);
     pthread_mutex_destroy(&mutex);
 
-    // liberation de l'espace alloui pour le tampon
+    // liberation de l'espace alloue 
     free(T);
 
     return 0;
